@@ -1,2 +1,1 @@
-# statusy
-fork of slstatus
+fork of dwmstatus
