@@ -36,7 +36,6 @@ char *smprintf(char *fmt, ...)
     va_start(fmtargs, fmt);
     vsnprintf(ret, len, fmt, fmtargs);
     va_end(fmtargs);
-
     return ret;
 }
 
@@ -45,7 +44,7 @@ void settz(char *tzname)
     setenv("TZ", tzname, 1);
 }
 
-char *mk_times(char *fmt, char *restrict tzname) //The tzname should not change when running
+char *mk_times(char *fmt, char *restrict tzname) //doesnt change we can set this as restrict
 {
     char buf[129];
     time_t tim;
@@ -166,10 +165,12 @@ char *get_temperature(char *base, char *sensor)
 
     co = readfile(base, sensor);
     if (co == NULL) {
-        free(co); 
         return smprintf("");
     }
-    return smprintf("%02.0f°C", atof(co) / 1000);//co freed as free(get_temperature)
+    float temp = atof(co)/1000;
+    free(co); 
+    //you need to free(co) or you get a memory leak, although very very small (you wuold have to run this for days to become serious) => you dont want things like this stacking up
+    return smprintf("%02.0f°C", temp);
 }
 
 char *exec_script(char *cmd)
@@ -211,7 +212,7 @@ int main(void)
     char *temp0;
     char *temp1;
     char *timezone;
-    
+
 
     //Presets
     char *timezoneSet = "America/Chicago";  //you can use stuff like utc but doesnt work sometimes
@@ -230,17 +231,15 @@ int main(void)
          */
         status = smprintf("T:%s|%s L:%s %s %s",
                           temp0, temp1, avgs, battery, timezone);
+
         set_status(status);
 
-
-        //free stuff
-        free(temp0);
         free(temp1);
+        free(temp0);
         free(avgs);
         free(battery);
         free(timezone);
         free(status);
-        
     }
 
     XCloseDisplay(dpy);
