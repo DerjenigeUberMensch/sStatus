@@ -44,7 +44,7 @@ void settz(char *tzname)
     setenv("TZ", tzname, 1);
 }
 
-char *mk_times(char *fmt, char *restrict tzname) //doesnt change we can set this as restrict
+char *mk_times(char *fmt, char *restrict tzname) //restrict for bettter mem usage
 {
     char buf[129];
     time_t tim;
@@ -146,17 +146,19 @@ char *get_battery(char *base)//can be greatly shorten but becomes unreadable
     } else if(!strncmp(co, "Charging", 8)) {
         status = '+';
     } else {
-        status = '?';
+        status = '.'; //status = '?';
     }
     free(co);
 
     if (remcap < 0 || descap < 0)
         return smprintf("invalid");
 
-    if( (float)remcap / (float)descap * 100 >= 99) {
-        return smprintf("%s", "AC", status);
+    float batteryPercentage = (float)remcap / (float)descap * 100;
+
+    if(batteryPercentage >= 99) {
+        return smprintf("%s", "AC"); //asume AC when bat>99 you can do just 100% when status = ? but nah
     }
-    return smprintf("%.0f%%%c", ((float)remcap / (float)descap) * 100, status); //returns percentage charged as x%
+    return smprintf("%.0f%%%c", batteryPercentage, status); //returns percentage charged as x%
 }
 
 char *get_temperature(char *base, char *sensor)
@@ -167,10 +169,10 @@ char *get_temperature(char *base, char *sensor)
     if (co == NULL) {
         return smprintf("");
     }
-    float temp = atof(co)/1000;
-    free(co); 
+    float temperature = atof(co)/1000;
+    free(co); //Also deja vu
     //you need to free(co) or you get a memory leak, although very very small (you wuold have to run this for days to become serious) => you dont want things like this stacking up
-    return smprintf("%02.0f°C", temp);
+    return smprintf("%02.0f°C", temperature);
 }
 
 char *exec_script(char *cmd)
@@ -216,7 +218,7 @@ int main(void)
 
     //Presets
     char *timezoneSet = "America/Chicago";  //you can use stuff like utc but doesnt work sometimes
-    for(;;sleep(2)) { 
+    for(;;sleep(1)) { 
         temp0   = get_temperature("/sys/devices/virtual/thermal/thermal_zone3", "temp"); //Might want to change thermal_zone
         temp1   = get_temperature("/sys/devices/virtual/thermal/thermal_zone4", "temp"); //on different motherboard configs
 
